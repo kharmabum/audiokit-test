@@ -334,7 +334,7 @@
 		</data>
 		<key>Modules/AudioKit.swiftmodule/i386.swiftmodule</key>
 		<data>
-		h3yWsvYxv+YIivLsjrbb4z54kMo=
+		2CnhO9W9zDW9m3CD6pWsX7rt2Wg=
 		</data>
 		<key>Modules/AudioKit.swiftmodule/x86_64.swiftdoc</key>
 		<data>
@@ -342,7 +342,7 @@
 		</data>
 		<key>Modules/AudioKit.swiftmodule/x86_64.swiftmodule</key>
 		<data>
-		3FdRmBjapd1X/Ksrh7LsGIVUbmU=
+		TOcdaEzLi1wdXKnmNdYIC9BhPL8=
 		</data>
 		<key>Modules/module.modulemap</key>
 		<data>
@@ -1298,11 +1298,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			h3yWsvYxv+YIivLsjrbb4z54kMo=
+			2CnhO9W9zDW9m3CD6pWsX7rt2Wg=
 			</data>
 			<key>hash2</key>
 			<data>
-			mjcb3LRrn3R83KYv3eDaLHLo9cZe2FjW0tgqqimF+Is=
+			r87JxG6ad2zyb+k/Ije4vm3cvySxXb85EplP3qgl4Ac=
 			</data>
 		</dict>
 		<key>Modules/AudioKit.swiftmodule/x86_64.swiftdoc</key>
@@ -1320,11 +1320,11 @@
 		<dict>
 			<key>hash</key>
 			<data>
-			3FdRmBjapd1X/Ksrh7LsGIVUbmU=
+			TOcdaEzLi1wdXKnmNdYIC9BhPL8=
 			</data>
 			<key>hash2</key>
 			<data>
-			RjnJc1qIih7DgE+7Npu8w1JHuS+yz0lcbxAXR4USDak=
+			PG4MUjav7gMYTddnBPkjXxYSSP/I9XdOWp/XkxU72d0=
 			</data>
 		</dict>
 		<key>Modules/module.modulemap</key>

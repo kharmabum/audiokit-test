@@ -12,13 +12,12 @@ import AudioKit
 class RecordController: UIViewController {
     
     static var didStartAudioKit: Bool = false
-    
+
     var mic: AKMicrophone?
     var micMixer: AKMixer?
-    var micBooster: AKBooster?
-    var tracker: AKFrequencyTracker?
-    var silence: AKBooster?
     var recorder: AKNodeRecorder?
+    var player: AKAudioPlayer?
+    var micBooster: AKBooster?
    
     var onFinish: ((URL) -> Void)?
 
@@ -34,22 +33,23 @@ class RecordController: UIViewController {
     
     init() {
         super.init(nibName: nil, bundle: nil)
-
+        
         _ = try? AKSettings.setSession(category: .playAndRecord, with: .defaultToSpeaker)
-
+        
         mic = AKMicrophone()
         micMixer = AKMixer(mic!)
         micBooster = AKBooster(micMixer!)
         micBooster!.gain = 0
         recorder = try? AKNodeRecorder(node: micMixer!)
-
-        tracker = AKFrequencyTracker(mic!)
-        silence = AKBooster(tracker!)
-        silence!.gain = 0
-
-        AudioKit.output = micBooster
-
+        let mainMixer = AKMixer(micBooster!)
+        
         if !RecordController.didStartAudioKit {
+            AudioKit.output = mainMixer
+            AudioKit.start()
+            RecordController.didStartAudioKit = true
+        } else {
+            AudioKit.stop()
+            AudioKit.output = mainMixer
             AudioKit.start()
         }
     }
@@ -57,23 +57,20 @@ class RecordController: UIViewController {
     override func viewDidLoad() {
         
         super.viewDidLoad()
+        
         view.backgroundColor = UIColor.white
-        
-        inputPlot = AKNodeOutputPlot(mic!, frame: CGRect.zero)
-        inputPlot?.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(inputPlot!)
-
-        inputPlot?.pinEdge(.top, toEdge: .top, ofItem: view, inset: 50)
-        inputPlot?.pinEdges([.left, .right], toSameEdgesOf: view)
-        
         recordButton.translatesAutoresizingMaskIntoConstraints = false
         recordButton.setTitle("start recording", for: .normal)
         recordButton.setTitleColor(UIColor.black, for: .normal)
         recordButton.addTarget(self, action: #selector(ViewController.didPressRecordButton), for: .touchUpInside)
         view.addSubview(recordButton)
-        
         recordButton.pinEdge(.bottom, toEdge: .bottom, ofItem: view, inset: -50)
         recordButton.pinEdges([.left, .right], toSameEdgesOf: view)
+        
+        inputPlot = AKNodeOutputPlot(mic!, frame: CGRect(x: 0, y: 0, width: view.width, height: 100)) // inputPlot.node = mic
+        view.addSubview(inputPlot!)
+        
+        inputPlot?.alignHorizontally(.center, vertically: .top)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -84,6 +81,8 @@ class RecordController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         
         super.viewDidAppear(animated)
+        
+        didPressRecordButton()
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -102,24 +101,35 @@ extension RecordController {
     func didPressRecordButton() {
 
         if recorder?.isRecording == true {
+
+            micBooster!.gain = 0
             
-            recorder?.stop()
+            let recordedDuration = recorder!.audioFile!.duration
             
-            recorder?.audioFile?.exportAsynchronously(name: "foo.m4a", baseDir: .documents, exportFormat: .m4a, callback: { (processedFile, error) in
+            if recordedDuration > 0.0 {
+                recorder?.stop()
                 
-                debugPrint(processedFile as Any)
-                debugPrint(error as Any)
+                var fileUrl = recorder!.audioFile!.url
+                let urlComponents = NSURLComponents(url: fileUrl, resolvingAgainstBaseURL: true)!
+                urlComponents.scheme = "file"
+                fileUrl = urlComponents.url!
+
                 
-                guard let url = processedFile?.url else { return }
+                let cacheUrl = URL.applicationCachesDirectory().appendingPathComponent("\(UUID().uuidString).caf")
+                _ = try? FileManager.default.moveItem(at: fileUrl, to: cacheUrl)
+                print(cacheUrl)
                 
-                self.onFinish?(url)
-            })
-            
+                onFinish?(cacheUrl)
+            }
         } else {
             
             recordButton.setTitle("stop recording", for: .normal)
             
-            _ = try? recorder?.record()
+            do {
+                try recorder?.record()
+            } catch {
+                print("failed to begin recording: \(error)")
+            }
         }
     }
 }

@@ -21,9 +21,9 @@ class ViewController: UIViewController {
         urlLabel.translatesAutoresizingMaskIntoConstraints = false
         recordButton.translatesAutoresizingMaskIntoConstraints = false
         
-        urlLabel.text = "last recording summary"
+        urlLabel.text = "no information to report"
         urlLabel.textColor = UIColor.black
-        urlLabel.textAlignment = .center
+        urlLabel.numberOfLines = 0
         
         recordButton.setTitle("press to record", for: .normal)
         recordButton.setTitleColor(UIColor.black, for: .normal)
@@ -34,7 +34,8 @@ class ViewController: UIViewController {
         view.addSubview(recordButton)
 
         urlLabel.pinEdge(.top, toEdge: .top, ofItem: view, inset: 50)
-        urlLabel.pinEdges([.left, .right], toSameEdgesOf: view)
+        urlLabel.pinEdge(.left, toEdge: .left, ofItem: view, inset: 50)
+        urlLabel.pinEdge(.right, toEdge: .right, ofItem: view, inset: -20)
         
         recordButton.pinEdge(.bottom, toEdge: .bottom, ofItem: view, inset: -50)
         recordButton.pinEdges([.left, .right], toSameEdgesOf: view)
@@ -60,10 +61,10 @@ extension ViewController {
         recordVC.onFinish = { url in
         
             
-            var summary = "last recording summary\n"
-            summary += "url: \(url)"
-            summary += "bytes: \(url.fileSize))"
-            
+            var summary = ""
+            summary += "location: \(url)\n\n"
+            summary += "bytes: \(url.fileSize)"
+            self.urlLabel.text = summary
             self.dismiss(animated: true, completion: nil)
         }
         
@@ -76,5 +77,10 @@ extension URL {
     
     var fileSize: Int {
         return ((try? FileManager.default.attributesOfItem(atPath: self.path))?[FileAttributeKey.size] as? NSNumber)?.intValue ?? 0
+    }
+    
+    static func applicationCachesDirectory() -> URL {
+        
+        return FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
     }
 }

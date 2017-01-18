@@ -11,13 +11,22 @@ import AudioKit
 
 class RecordController: UIViewController {
     
-    static var didStartAudioKit: Bool = false
+    static var mic: AKMicrophone?
+    static var micMixer: AKMixer?
+    static var recorder: AKNodeRecorder?
+    static var micBooster: AKBooster?
+    static var mainMixer: AKMixer?
 
-    var mic: AKMicrophone?
-    var micMixer: AKMixer?
-    var recorder: AKNodeRecorder?
-    var player: AKAudioPlayer?
-    var micBooster: AKBooster?
+    static func configure() {
+        mic = AKMicrophone()
+        micMixer = AKMixer(mic!)
+        recorder = try? AKNodeRecorder(node: micMixer!)
+        micBooster = AKBooster(micMixer!)
+        micBooster!.gain = 0
+        mainMixer = AKMixer(micBooster!)
+        AudioKit.output = mainMixer
+        AudioKit.start()
+    }
    
     var onFinish: ((URL) -> Void)?
 
@@ -33,25 +42,10 @@ class RecordController: UIViewController {
     
     init() {
         super.init(nibName: nil, bundle: nil)
-        
+
         _ = try? AKSettings.setSession(category: .playAndRecord, with: .defaultToSpeaker)
         
-        mic = AKMicrophone()
-        micMixer = AKMixer(mic!)
-        micBooster = AKBooster(micMixer!)
-        micBooster!.gain = 0
-        recorder = try? AKNodeRecorder(node: micMixer!)
-        let mainMixer = AKMixer(micBooster!)
-        
-        if !RecordController.didStartAudioKit {
-            AudioKit.output = mainMixer
-            AudioKit.start()
-            RecordController.didStartAudioKit = true
-        } else {
-            AudioKit.stop()
-            AudioKit.output = mainMixer
-            AudioKit.start()
-        }
+        RecordController.mic?.start()
     }
     
     override func viewDidLoad() {
@@ -67,7 +61,7 @@ class RecordController: UIViewController {
         recordButton.pinEdge(.bottom, toEdge: .bottom, ofItem: view, inset: -50)
         recordButton.pinEdges([.left, .right], toSameEdgesOf: view)
         
-        inputPlot = AKNodeOutputPlot(mic!, frame: CGRect(x: 0, y: 0, width: view.width, height: 100)) // inputPlot.node = mic
+        inputPlot = AKNodeOutputPlot(RecordController.mic!, frame: CGRect(x: 0, y: 0, width: view.width, height: 100)) // inputPlot.node = mic
         view.addSubview(inputPlot!)
         
         inputPlot?.alignHorizontally(.center, vertically: .top)
@@ -81,6 +75,7 @@ class RecordController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         
         super.viewDidAppear(animated)
+        
         
         didPressRecordButton()
     }
@@ -100,33 +95,35 @@ extension RecordController {
     
     func didPressRecordButton() {
 
-        if recorder?.isRecording == true {
+        if RecordController.recorder?.isRecording == true {
 
-            micBooster!.gain = 0
+            RecordController.micBooster!.gain = 0
             
-            let recordedDuration = recorder!.audioFile!.duration
+            let recordedDuration = RecordController.recorder!.audioFile!.duration
             
             if recordedDuration > 0.0 {
-                recorder?.stop()
+                RecordController.recorder?.stop()
+                RecordController.mic?.stop()
                 
-                var fileUrl = recorder!.audioFile!.url
+                var fileUrl = RecordController.recorder!.audioFile!.url
                 let urlComponents = NSURLComponents(url: fileUrl, resolvingAgainstBaseURL: true)!
                 urlComponents.scheme = "file"
                 fileUrl = urlComponents.url!
 
                 
                 let cacheUrl = URL.applicationCachesDirectory().appendingPathComponent("\(UUID().uuidString).caf")
-                _ = try? FileManager.default.moveItem(at: fileUrl, to: cacheUrl)
+                _ = try? FileManager.default.copyItem(at: fileUrl, to: cacheUrl)
                 print(cacheUrl)
                 
                 onFinish?(cacheUrl)
+                _ = try? RecordController.recorder?.reset()
             }
         } else {
             
             recordButton.setTitle("stop recording", for: .normal)
             
             do {
-                try recorder?.record()
+                try RecordController.recorder?.record()
             } catch {
                 print("failed to begin recording: \(error)")
             }

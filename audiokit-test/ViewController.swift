@@ -60,12 +60,14 @@ extension ViewController {
         let recordVC = RecordController()
         recordVC.onFinish = { url in
         
-            
             var summary = ""
             summary += "location: \(url)\n\n"
             summary += "bytes: \(url.fileSize)"
             self.urlLabel.text = summary
             self.dismiss(animated: true, completion: nil)
+            
+            _ = try? recordVC.player?.reloadFile()
+            recordVC.player?.play()
         }
         
         present(recordVC, animated: true)

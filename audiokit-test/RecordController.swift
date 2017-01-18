@@ -34,14 +34,20 @@ class RecordController: UIViewController {
     init() {
         super.init(nibName: nil, bundle: nil)
         
+        AKSettings.audioInputEnabled = true
         _ = try? AKSettings.setSession(category: .playAndRecord, with: .defaultToSpeaker)
-        
+
         mic = AKMicrophone()
         micMixer = AKMixer(mic!)
+        recorder = try? AKNodeRecorder(node: micMixer!)
         micBooster = AKBooster(micMixer!)
         micBooster!.gain = 0
-        recorder = try? AKNodeRecorder(node: micMixer!)
-        let mainMixer = AKMixer(micBooster!)
+        
+        player = try? AKAudioPlayer(file: (recorder?.audioFile)!)
+        player?.looping = true
+        
+        let playerMixer = AKMixer(player!)
+        let mainMixer = AKMixer(playerMixer, micBooster!)
         
         if !RecordController.didStartAudioKit {
             AudioKit.output = mainMixer
@@ -82,7 +88,7 @@ class RecordController: UIViewController {
         
         super.viewDidAppear(animated)
         
-        didPressRecordButton()
+        _ = try? AKSettings.setSession(category: .playAndRecord, with: .defaultToSpeaker)
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -101,8 +107,6 @@ extension RecordController {
     func didPressRecordButton() {
 
         if recorder?.isRecording == true {
-
-            micBooster!.gain = 0
             
             let recordedDuration = recorder!.audioFile!.duration
             

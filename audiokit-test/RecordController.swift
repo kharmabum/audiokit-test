@@ -16,6 +16,9 @@ class RecordController: UIViewController {
     static var recorder: AKNodeRecorder?
     static var micBooster: AKBooster?
     static var mainMixer: AKMixer?
+    static var player: AKAudioPlayer?
+    static var playerMixer: AKMixer?
+    static var inputPlot: AKNodeOutputPlot?
 
     static func configure() {
         mic = AKMicrophone()
@@ -23,16 +26,22 @@ class RecordController: UIViewController {
         recorder = try? AKNodeRecorder(node: micMixer!)
         micBooster = AKBooster(micMixer!)
         micBooster!.gain = 0
-        mainMixer = AKMixer(micBooster!)
+        
+        player = try? AKAudioPlayer(file: (recorder?.audioFile)!)
+        player?.looping = true
+        playerMixer = AKMixer(player!)
+
+        mainMixer = AKMixer(playerMixer!, micBooster!)
+
         AudioKit.output = mainMixer
-        AudioKit.start()
+        AudioKit.start()        
+
+        inputPlot = AKNodeOutputPlot(mic!, frame: CGRect.zero) // inputPlot.node = mic
     }
    
     var onFinish: ((URL) -> Void)?
 
     let recordButton = UIButton()
-    
-    var inputPlot: AKNodeOutputPlot?
     
     // MARK: UIViewController
     
@@ -61,10 +70,10 @@ class RecordController: UIViewController {
         recordButton.pinEdge(.bottom, toEdge: .bottom, ofItem: view, inset: -50)
         recordButton.pinEdges([.left, .right], toSameEdgesOf: view)
         
-        inputPlot = AKNodeOutputPlot(RecordController.mic!, frame: CGRect(x: 0, y: 0, width: view.width, height: 100)) // inputPlot.node = mic
-        view.addSubview(inputPlot!)
+        view.addSubview(RecordController.inputPlot!)
         
-        inputPlot?.alignHorizontally(.center, vertically: .top)
+        RecordController.inputPlot?.frame = CGRect(x: 0, y: 0, width: view.width, height: 100)
+        RecordController.inputPlot?.alignHorizontally(.center, vertically: .top)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -113,7 +122,6 @@ extension RecordController {
                 
                 let cacheUrl = URL.applicationCachesDirectory().appendingPathComponent("\(UUID().uuidString).caf")
                 _ = try? FileManager.default.copyItem(at: fileUrl, to: cacheUrl)
-                print(cacheUrl)
                 
                 onFinish?(cacheUrl)
                 _ = try? RecordController.recorder?.reset()

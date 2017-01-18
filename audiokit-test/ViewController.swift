@@ -66,8 +66,13 @@ extension ViewController {
             summary += "bytes: \(url.fileSize)"
             self.urlLabel.text = summary
             self.dismiss(animated: true, completion: nil)
+            
+            _ = try? RecordController.player?.reloadFile()
+            RecordController.player?.play()
+
         }
         
+        RecordController.player?.stop()
         present(recordVC, animated: true)
     }
 }
